@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>作文用紙づくり</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root { --ink:#222; --line:#d9cfc2; --accent:#8a5a2b; --bg:#faf7f2; --warn:#a33; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family:"Hiragino Sans","Yu Gothic",sans-serif; color:var(--ink); background:var(--bg); line-height:1.7; }
+  main { max-width:960px; margin:0 auto; padding:16px; }
+  h1 { font-size:1.4rem; margin:8px 0 4px; }
+  h2 { font-size:1.05rem; margin:0 0 8px; }
+  section { background:#fff; border:1px solid var(--line); border-radius:8px; padding:14px 16px; margin:14px 0; }
+  .note { color:#666; font-size:.9rem; margin:4px 0 8px; }
+  textarea { width:100%; min-height:150px; font:inherit; font-size:.9rem; padding:8px; border:1px solid var(--line); border-radius:6px; }
+  #promptText { min-height:110px; background:#f6f3ee; }
+  button, select { font:inherit; padding:6px 14px; border:1px solid var(--accent); border-radius:6px; background:#fff; color:var(--accent); cursor:pointer; }
+  button.primary { background:var(--accent); color:#fff; }
+  button:disabled { opacity:.5; cursor:default; }
+  .row { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin:8px 0; }
+  #messages p { margin:4px 0; padding:6px 10px; border-radius:6px; background:#fbeaea; color:var(--warn); font-size:.92rem; }
+  #messages p.info { background:#eef4ea; color:#385b2c; }
+  table { width:100%; border-collapse:collapse; font-size:.92rem; }
+  th, td { border-bottom:1px solid var(--line); padding:6px 8px; text-align:left; vertical-align:top; }
+  .flag { color:var(--warn); font-weight:bold; }
+  details { margin:2px 0; }
+  details summary { cursor:pointer; color:var(--accent); }
+  .detail-body { font-size:.88rem; padding:4px 8px; background:#faf7f2; border-radius:6px; margin-top:4px; }
+  .editor-field { display:inline-block; margin:4px 16px 4px 0; font-size:.92rem; }
+  .editor-field input { font:inherit; padding:4px 6px; border:1px solid var(--line); border-radius:4px; width:16em; }
+  .editor-block { display:flex; gap:8px; align-items:flex-start; margin:6px 0; }
+  .editor-type { flex:0 0 5.5em; font-size:.8rem; color:#777; padding-top:6px; }
+  .editor-text { flex:1; min-height:1.8em; padding:6px 8px; border:1px solid var(--line); border-radius:6px; background:#fff; font-family:"Noto Serif JP",serif; font-size:1.05rem; line-height:1.9; }
+  .editor-text:focus { outline:2px solid #e6c48f; }
+  mark.mark-decide { background:#ffd6d6; color:#b00000; font-weight:bold; }
+  mark.mark-unlearned { background:#ffe7c2; color:#8a4b00; }
+  mark.mark-fixed { background:#dff3df; color:#1b5e20; }
+  mark.mark-reverted { background:#eee; color:#666; text-decoration:line-through; }
+  .edit-list { margin:8px 0; }
+  .edit-row { display:flex; gap:8px; align-items:center; padding:3px 0; font-size:.92rem; }
+  .edit-tag { font-size:.75rem; padding:1px 6px; border-radius:8px; background:#eee; }
+  .edit-tag-decide { background:#ffd6d6; color:#b00000; }
+  .edit-tag-unlearned { background:#ffe7c2; color:#8a4b00; }
+  .edit-tag-unresolved { background:#fde0e0; color:#900; }
+  .kanji-status-open { color:var(--warn); font-weight:bold; }
+  .kanji-status-done { color:#385b2c; font-weight:bold; }
+  #preview canvas { width:100%; height:auto; border:1px solid var(--line); margin:8px 0; background:#fff; }
+  @media print { body * { display:none; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>作文用紙づくり</h1>
+  <p class="note">ジェミニが直した作文のデータから、児童ひとりずつの原稿用紙（20字×20行）を作ります。作文のデータは、この画面の中だけで処理し、どこにも送りません。</p>
+
+  <section>
+    <h2>1. Gem の指示（ジェミニに貼る依頼文）</h2>
+    <p class="note">学校のアカウントで Gem を作り、指示の欄にこの文を貼ってください。使う時は、作文のPDFや写真といっしょに「2年」のように学年を書いて送ります。</p>
+    <textarea id="promptText" readonly placeholder="依頼文を読み込んでいます…"></textarea>
+    <div class="row"><button id="copyPromptButton">依頼文をコピー</button></div>
+  </section>
+
+  <section>
+    <h2>2. ジェミニの返事を読み込む</h2>
+    <p class="note">Gem の返事が何回かに分かれた時は、この欄に続けて貼り足してから読み込んでください。まとめて読み取ります。</p>
+    <textarea id="inputText" placeholder="Gem の返事（「===== 出席番号」で始まるテキスト）をここに貼ってください。先生が直したテキストでもかまいません"></textarea>
+    <div class="row">
+      <input type="file" id="inputFile" accept=".json,.txt,application/json,text/plain">
+      <label>用紙: <select id="paperSelect"><option value="A4">A4（横）</option><option value="B4">B4（横）</option></select></label>
+      <button id="loadButton" class="primary">読み込んで用紙を作る</button>
+    </div>
+    <div id="messages"></div>
+  </section>
+
+  <section id="resultSection" hidden>
+    <h2>3. できあがり</h2>
+    <p id="reviewSummary" class="note"></p>
+    <div class="row">
+      <button id="startReviewButton" class="primary" hidden>迷う漢字の確認を始める</button>
+      <button id="allPdfButton" class="primary">全員分を1本のPDFで保存</button>
+      <button id="csvButton">確認一覧(CSV)を保存</button>
+      <button id="kanjiButton">漢字の確認リスト(テキスト)を保存</button>
+    </div>
+    <table>
+      <thead><tr><th>出席番号</th><th>元のページ</th><th>枚数</th><th>直した所</th><th>確認</th><th>漢字</th><th></th></tr></thead>
+      <tbody id="resultBody"></tbody>
+    </table>
+  </section>
+
+  <section id="editorSection" hidden></section>
+
+  <section id="previewSection" hidden>
+    <h2 id="previewTitle">プレビュー</h2>
+    <div id="preview"></div>
+  </section>
+</main>
+
+<script src="config.js"></script>
+<script src="kanji.js"></script>
+<script src="parser.js"></script>
+<script src="layout.js"></script>
+<script src="render.js"></script>
+<script src="export.js"></script>
+<script src="editor.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

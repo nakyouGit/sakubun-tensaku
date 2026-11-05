@@ -1,0 +1,139 @@
+{
+  "grade": 2,
+  "essays": [
+    {
+      "studentNumber": "12",
+      "sourcePages": [
+        3,
+        4
+      ],
+      "name": "中山 太郎",
+      "nameLocation": "body",
+      "title": "うんどうかい",
+      "titleLocation": "body",
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "ぼくは、うんどうかいでリレ出ました。スタートの前は、むねがどきどきして、手に汗をかいていました。"
+        },
+        {
+          "type": "dialogue",
+          "text": "「がんばれ。」"
+        },
+        {
+          "type": "after_dialogue",
+          "text": "と、ともだちがおおきなこえでいってくれました。"
+        },
+        {
+          "type": "paragraph",
+          "text": "[[（ぜったいにぬくぞ。）]]とおもって、いっしょうけんめいはしりました。ゴールしたとき、せんせいが「よくがんばったね。みんなでちからをあわせたから、1ばんになれたんだよ。」といってくれて、とてもうれしかったです。"
+        },
+        {
+          "type": "paragraph",
+          "text": "どうしてこんなにうれしいのかな？それは、みんなでがんばったからだとおもいます。らいねんもまたリレーに出たいです"
+        }
+      ],
+      "unsure": [
+        {
+          "text": "友だち",
+          "note": "「友」の字が読みにくい"
+        }
+      ],
+      "edits": [
+        {
+          "kind": "脱字",
+          "before": "リレ出",
+          "after": "リレーに出",
+          "context": "うんどうかいでリレ出ました"
+        },
+        {
+          "kind": "漢字",
+          "before": "うんどうかい",
+          "after": "運動会",
+          "context": "うんどうかいでリレ"
+        },
+        {
+          "kind": "漢字",
+          "before": "ともだち",
+          "after": "友だち",
+          "context": "と、ともだちが"
+        },
+        {
+          "kind": "漢字",
+          "before": "おおきな",
+          "after": "大きな",
+          "context": "がおおきなこえ"
+        },
+        {
+          "kind": "漢字",
+          "before": "こえ",
+          "after": "声",
+          "context": "おおきなこえで"
+        },
+        {
+          "kind": "漢字",
+          "before": "せんせい",
+          "after": "先生",
+          "context": "せんせいが「よく"
+        },
+        {
+          "kind": "漢字",
+          "before": "らいねん",
+          "after": "来年",
+          "context": "らいねんもまた"
+        },
+        {
+          "kind": "脱字",
+          "before": "出たいです",
+          "after": "出たいです。",
+          "context": "またリレーに出たいです"
+        },
+        {
+          "kind": "段落",
+          "before": "ました。スタート",
+          "after": "ここで段落を分けた",
+          "context": "出ました。スタート"
+        }
+      ]
+    },
+    {
+      "studentNumber": null,
+      "sourcePages": [
+        5
+      ],
+      "name": "山田 花子",
+      "nameLocation": "margin",
+      "title": "",
+      "titleLocation": "none",
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "きのうは、おばあちゃんのいえにいきました。しゃしんをとったり、おしゃべりをしたりして、たのしいいちにちでした。"
+        },
+        {
+          "type": "dialogue",
+          "text": "「またきてね。」"
+        },
+        {
+          "type": "after_dialogue",
+          "text": "と、おばあちゃんが手をふってくれました。"
+        }
+      ],
+      "unsure": [],
+      "edits": [
+        {
+          "kind": "漢字",
+          "before": "おばあちゃん",
+          "after": "お祖母ちゃん",
+          "context": "おばあちゃんのいえ"
+        },
+        {
+          "kind": "誤字",
+          "before": "しゃしんを",
+          "after": "写真を",
+          "context": "しゃしんをとったり"
+        }
+      ]
+    }
+  ]
+}
