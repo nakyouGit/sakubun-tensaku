@@ -40,6 +40,14 @@
   mark.mark-unlearned { background:#ffe7c2; color:#8a4b00; }
   mark.mark-fixed { background:#dff3df; color:#1b5e20; }
   mark.mark-reverted { background:#eee; color:#666; text-decoration:line-through; }
+  mark.mark-note { background:#fff2a8; color:#6b5300; }
+  .gem-notes { margin:8px 0; padding:6px 10px; background:#fffbe6; border:1px solid #f0e2a0; border-radius:6px; font-size:.88rem; }
+  .text-editor-wrap { position:relative; margin:8px 0; }
+  .text-editor-backdrop, .text-editor-area { box-sizing:border-box; width:100%; margin:0; padding:10px 12px; border:1px solid var(--line); border-radius:6px; font-family:"Noto Serif JP",serif; font-size:1.05rem; line-height:1.9; white-space:pre-wrap; word-wrap:break-word; overflow-wrap:break-word; letter-spacing:0; }
+  .text-editor-backdrop { position:absolute; inset:0; color:transparent; background:#fff; pointer-events:none; overflow:hidden; }
+  .text-editor-backdrop mark { color:transparent; border-radius:2px; }
+  .text-editor-area { position:relative; background:transparent; color:#222; resize:none; overflow:hidden; min-height:8em; }
+  .text-editor-area:focus { outline:2px solid #e6c48f; }
   .edit-list { margin:8px 0; }
   .edit-row { display:flex; gap:8px; align-items:center; padding:3px 0; font-size:.92rem; }
   .edit-tag { font-size:.75rem; padding:1px 6px; border-radius:8px; background:#eee; }

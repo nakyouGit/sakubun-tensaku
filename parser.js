@@ -535,6 +535,7 @@
       edits: edits,
       unsure: normalizeUnsure(raw.unsure),
       gemNotes: cleanText(raw.gemNotes),
+      fromText: !!raw.fromText,
       grade: grade,
       baseWarnings: warnings,
     };
@@ -670,7 +671,7 @@
     const rawEssays = essays.map((e) => ({
       studentNumber: e.studentNumber, sourcePages: e.sourcePages,
       title: e.title, titleLocation: e.titleLocation, name: e.name, nameLocation: e.nameLocation,
-      blocks: e.blocks, edits: [], unsure: e.unsure, gemNotes: e.notes.join(' / '), grade: grade,
+      blocks: e.blocks, edits: [], unsure: e.unsure, gemNotes: e.notes.join(' / '), grade: grade, fromText: true,
     }));
     return { rawEssays: rawEssays, grade: grade, messages: messages };
   }

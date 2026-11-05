@@ -43,6 +43,7 @@
   function recomputeEssay(item, stateLike) {
     const base = Object.assign({}, item.base, {
       rawTitle: stateLike.header.title,
+      name: stateLike.header.name === undefined ? item.base.name : stateLike.header.name,
       titleLocation: stateLike.header.titleLocation,
       nameLocation: stateLike.header.nameLocation,
     });
@@ -154,7 +155,7 @@
 
   // ---- 本文を直す -----------------------------------------------------------
 
-  const initialHeader = (base) => ({ title: base.rawTitle, titleLocation: base.titleLocation, nameLocation: base.nameLocation });
+  const initialHeader = (base) => ({ title: base.rawTitle, name: base.name, titleLocation: base.titleLocation, nameLocation: base.nameLocation });
 
   function openEditor(item) {
     state.editingItem = item;
@@ -164,6 +165,13 @@
       title: '本文を直す（出席番号 ' + (item.essay.studentNumber || '未定') + '）',
       item: item,
       recompute: (stateLike) => recomputeEssay(item, stateLike),
+      onChange: (result) => {
+        item.choices = result.choices;
+        item.header = result.header;
+        item.manual = result.manual;
+        refreshItem(item);
+        showPreview(item, false);
+      },
       onSave: (result, goNext) => {
         item.choices = result.choices;
         item.header = result.header;

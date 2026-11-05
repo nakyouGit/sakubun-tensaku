@@ -75,6 +75,166 @@
     duplicate: '同じ場所の直しと重なっています',
   };
 
+
+  // ---- テキスト形式の作文を直す画面（空行＝段落の区切り） ------------------
+  const removeSpacesBetweenJapanese = (text) => text.replace(/([^\x00-\x7F])[ 　\t]+(?=[^\x00-\x7F])/g, '$1');
+
+  /** 「確認」に書かれた言葉のうち「 」で囲まれたものを取り出す。 */
+  function quotedWords(unsure) {
+    const words = [];
+    unsure.forEach((item) => {
+      const text = String(item.text || '');
+      const pattern = /[「『]([^」』]{1,20})[」』]/g;
+      let m;
+      while ((m = pattern.exec(text)) !== null) words.push(m[1]);
+    });
+    return words;
+  }
+
+  /** 本文を色付きの部品にする。学年の漢字（赤・橙）と、Gem が確認を求めた言葉（黄）。 */
+  function buildTextHighlights(text, grade, noteWords) {
+    const kanji = root.SakubunKanji;
+    const classes = new Array(text.length).fill('');
+    if (grade && kanji) {
+      for (let i = 0; i < text.length; i++) {
+        const g = kanji.gradeOf(text[i]);
+        classes[i] = g > grade ? 'mark-unlearned' : g === grade ? 'mark-decide' : '';
+      }
+    }
+    noteWords.forEach((word) => {
+      let from = 0;
+      let at;
+      while ((at = text.indexOf(word, from)) >= 0) {
+        for (let i = at; i < at + word.length; i++) classes[i] = 'mark-note';
+        from = at + word.length;
+      }
+    });
+    const nodes = [];
+    let run = '';
+    let runClass = '';
+    const flush = () => {
+      if (!run) return;
+      if (runClass) nodes.push(make('mark', run, runClass)); else nodes.push(document.createTextNode(run));
+      run = '';
+    };
+    for (let i = 0; i < text.length; i++) {
+      if (classes[i] !== runClass) { flush(); runClass = classes[i]; }
+      run += text[i];
+    }
+    flush();
+    return nodes;
+  }
+
+  function renderTextEditor(container, options) {
+    const item = options.item;
+    const base = item.base;
+    const grade = Number(base.grade);
+    const noteWords = quotedWords(base.unsure);
+    const header = Object.assign({}, item.header);
+
+    container.textContent = '';
+    container.appendChild(make('h2', options.title));
+
+    const legend = make('p', undefined, 'note');
+    legend.appendChild(make('mark', 'この学年で習う漢字', 'mark-decide'));
+    legend.appendChild(document.createTextNode(' '));
+    legend.appendChild(make('mark', 'まだ習っていない漢字', 'mark-unlearned'));
+    legend.appendChild(document.createTextNode(' '));
+    legend.appendChild(make('mark', 'Gem が確認を求めた言葉', 'mark-note'));
+    legend.appendChild(document.createTextNode('　空の行が段落の区切りです。空の行を入れたり消したりして、段落を変えられます。書き換えると、下のプレビューがすぐ変わります。'));
+    container.appendChild(legend);
+
+    const field = (labelText, value) => {
+      const wrap = make('label', labelText + ' ', 'editor-field');
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.value = value || '';
+      wrap.appendChild(input);
+      container.appendChild(wrap);
+      return input;
+    };
+    const titleInput = field('題名', header.title);
+    const nameInput = field('名前', header.name);
+    const select = (labelText, key) => {
+      const wrap = make('label', labelText + ' ', 'editor-field');
+      const sel = document.createElement('select');
+      LOCATION_OPTIONS.forEach(([value, text]) => {
+        const option = make('option', text);
+        option.value = value;
+        if (header[key] === value) option.selected = true;
+        sel.appendChild(option);
+      });
+      sel.addEventListener('change', notify);
+      wrap.appendChild(sel);
+      container.appendChild(wrap);
+      return sel;
+    };
+    const titleSelect = select('題名の場所', 'titleLocation');
+    const nameSelect = select('名前の場所', 'nameLocation');
+
+    if (base.unsure.length > 0 || base.gemNotes) {
+      const box = make('div', undefined, 'gem-notes');
+      if (base.gemNotes) box.appendChild(make('div', 'Gem が直した所: ' + base.gemNotes));
+      base.unsure.forEach((u) => box.appendChild(make('div', '確認: ' + u.text)));
+      container.appendChild(box);
+    }
+
+    const wrap = make('div', undefined, 'text-editor-wrap');
+    const backdrop = make('div', undefined, 'text-editor-backdrop');
+    const area = document.createElement('textarea');
+    area.className = 'text-editor-area';
+    area.spellcheck = false;
+    const startBlocks = item.manual ? item.manual.blocks : base.rawBlocks;
+    area.value = startBlocks.map((b) => b.text).join('\n\n');
+    wrap.appendChild(backdrop);
+    wrap.appendChild(area);
+    container.appendChild(wrap);
+
+    function sync() {
+      area.style.height = 'auto';
+      area.style.height = (area.scrollHeight + 4) + 'px';
+      backdrop.textContent = '';
+      buildTextHighlights(area.value, grade, noteWords).forEach((node) => backdrop.appendChild(node));
+      backdrop.appendChild(document.createTextNode('\n'));
+    }
+
+    const collect = () => {
+      const state = {
+        header: { title: titleInput.value.trim(), name: nameInput.value.trim(), titleLocation: titleSelect.value, nameLocation: nameSelect.value },
+        choices: new Map(),
+      };
+      const blocks = area.value.split(/\n[ 　\t]*\n/)
+        .map((chunk) => removeSpacesBetweenJapanese(chunk.replace(/\s*\n\s*/g, '')).trim())
+        .filter(Boolean)
+        .map((text) => ({ type: 'paragraph', text: text }));
+      state.manual = { title: state.header.title, blocks: blocks };
+      return state;
+    };
+
+    let timer = null;
+    function notify() {
+      clearTimeout(timer);
+      timer = setTimeout(() => { if (options.onChange) options.onChange(collect()); }, 350);
+    }
+    area.addEventListener('input', () => { sync(); notify(); });
+    titleInput.addEventListener('input', notify);
+    nameInput.addEventListener('input', notify);
+    sync();
+    root.requestAnimationFrame ? root.requestAnimationFrame(sync) : null;
+
+    const buttons = make('div', undefined, 'row');
+    const saveNext = make('button', '保存して次へ', 'primary');
+    saveNext.addEventListener('click', () => options.onSave(collect(), true));
+    const save = make('button', '保存');
+    save.addEventListener('click', () => options.onSave(collect(), false));
+    const reset = make('button', 'Gem の返事に戻す');
+    reset.addEventListener('click', () => options.onReset());
+    const close = make('button', '閉じる');
+    close.addEventListener('click', () => options.onClose());
+    [saveNext, save, reset, close].forEach((b) => buttons.appendChild(b));
+    container.appendChild(buttons);
+  }
+
   /**
    * options:
    *  title, item（base・choices・header・manual を持つ）, recompute(state) → materialize した作文,
@@ -82,6 +242,7 @@
    * 保存の中身 result: { choices:Map, header:{title,titleLocation,nameLocation}, manual:null|{title,blocks} }
    */
   function render(container, options) {
+    if (options.item.base.fromText) return renderTextEditor(container, options);
     const item = options.item;
     const base = item.base;
     const editsById = new Map(base.edits.map((e) => [e.id, e]));
