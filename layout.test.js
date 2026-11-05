@@ -597,4 +597,17 @@ test('テキスト形式の作文も、そのまま組版でき、行頭に禁�
   assert.deepStrictEqual(layoutEssay(essay, cfg).violations, []);
 });
 
+test('テキスト形式: 改行が消えて同じ行に続いて貼られても、見出し・題名・名前・※を読み取る。行の折り返しの空白は詰める', () => {
+  const flat = '学年: 2年\n\n===== 出席番号 なし ／ ページ 1 題名（なし）: 名前（欄外）: 山田 花子\n\nわたしは、二つ話します。\n\n一つ目は、あ。 次に、い。\n\n※直した所: 脱字「あ→あ」 ※確認: なし\n\n===== 出席番号 21 ／ ページ 2 題名（なし）: 名前（欄外）: 鈴木 太郎\n\nぼくは 家で 話した\n\n※直した所: なし ※確認: 読み取りが難しい';
+  const essays = parseGeminiOutput(flat, cfg).essays;
+  assert.strictEqual(essays.length, 2);
+  const a = essays.find((e) => e.studentNumber === '1');
+  assert.deepStrictEqual([a.name, a.nameLocation, a.titleLocation], ['山田 花子', 'margin', 'none']);
+  assert.strictEqual(a.blocks[1].text, '一つ目は、あ。次に、い。');
+  assert.strictEqual(a.gemNotes, '脱字「あ→あ」');
+  const b = essays.find((e) => e.studentNumber === '21');
+  assert.strictEqual(b.blocks[0].text, 'ぼくは家で話した');
+  assert.strictEqual(b.unsure.length, 1);
+});
+
 console.log('\n' + passed + ' 件通過' + (process.exitCode ? '（失敗あり）' : ''));

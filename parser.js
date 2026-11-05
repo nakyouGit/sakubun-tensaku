@@ -599,11 +599,20 @@
   const TEXT_NOTE = /^※\s*(直した所|確認)\s*[:：]\s*(.*)$/;
   const TEXT_CONTINUE = /^続きは\s*ページ\s*([0-9０-９]+)/;
 
+  /** 日本語の文字どうしの間の空白（分かち書き・行の折り返しで入った空白）を詰める。 */
+  const removeSpacesBetweenJapanese = (text) => text.replace(/([^\x00-\x7F])[ \u3000\t]+(?=[^\x00-\x7F])/g, '$1');
+
   const looksLikeTextFormat = (rawText) => /^={3,}\s*出席番号/m.test(String(rawText));
 
   /** 「===== 出席番号 12 ／ ページ 3,4」で始まるテキストを、JSON と同じ形の作文の並びに直す。 */
   function parseTextOutput(rawText) {
-    const lines = String(rawText).replace(/\r\n?/g, '\n').split('\n').filter((line) => !/^\s*```/.test(line));
+    // 改行が消えて同じ行に続いて貼られた時のために、見出し・題名・名前・※の前で行を分け直す
+    const spread = String(rawText).replace(/\r\n?/g, '\n')
+      .replace(/[ \t]*(={3,}\s*出席番号)/g, '\n$1')
+      .replace(/[ \t]*((?:題名|名前)\s*[（(]\s*(?:本文|欄外|なし)\s*[）)]\s*[:：])/g, '\n$1')
+      .replace(/[ \t]*(※\s*(?:直した所|確認)\s*[:：])/g, '\n$1')
+      .replace(/[ \t]*(続きは\s*ページ)/g, '\n$1');
+    const lines = spread.split('\n').filter((line) => !/^\s*```/.test(line));
     const messages = [];
     let grade = null;
     const essays = [];
@@ -612,7 +621,7 @@
 
     const finishParagraph = () => {
       if (current && current.paragraph.length > 0) {
-        current.blocks.push({ type: 'paragraph', text: current.paragraph.join('') });
+        current.blocks.push({ type: 'paragraph', text: removeSpacesBetweenJapanese(current.paragraph.join('')) });
       }
       if (current) current.paragraph = [];
     };
