@@ -599,6 +599,8 @@
   const TEXT_LOCATION = { '本文': 'body', '欄外': 'margin', 'なし': 'none' };
   const TEXT_NOTE = /^※\s*(直した所|確認)\s*[:：]\s*(.*)$/;
   const TEXT_CONTINUE = /^続きは\s*ページ\s*([0-9０-９]+)/;
+  const TEXT_GRADE_LINE = /^学年\s*[:：]\s*([0-9０-９]+)\s*年?\s*$/;
+  const TEXT_PROCESSED = /^処理したページ\s*[:：]/;
 
   /** 日本語の文字どうしの間の空白（分かち書き・行の折り返しで入った空白）を詰める。 */
   const removeSpacesBetweenJapanese = (text) => text.replace(/([^\x00-\x7F])[ \u3000\t]+(?=[^\x00-\x7F])/g, '$1');
@@ -612,13 +614,15 @@
       .replace(/[ \t]*(={3,}\s*出席番号)/g, '\n$1')
       .replace(/[ \t]*((?:題名|名前)\s*[（(]\s*(?:本文|欄外|なし)\s*[）)]\s*[:：])/g, '\n$1')
       .replace(/[ \t]*(※\s*(?:直した所|確認)\s*[:：])/g, '\n$1')
-      .replace(/[ \t]*(続きは\s*ページ)/g, '\n$1');
+      .replace(/[ \t]*(続きは\s*ページ)/g, '\n$1')
+      .replace(/[ \t]*(処理したページ\s*[:：])/g, '\n$1');
     const lines = spread.split('\n').filter((line) => !/^\s*```/.test(line));
     const messages = [];
     let grade = null;
     const essays = [];
     let current = null;
     let bodyOpen = false;
+    const continuePages = [];
 
     const finishParagraph = () => {
       if (current && current.paragraph.length > 0) {
@@ -629,6 +633,9 @@
 
     lines.forEach((line) => {
       const trimmed = line.trim();
+      const gradeLine = trimmed.match(TEXT_GRADE_LINE);
+      if (gradeLine) { if (!grade) grade = String(parseInt(toAsciiDigits(gradeLine[1]), 10)); return; }
+      if (TEXT_PROCESSED.test(trimmed)) return;
       const header = trimmed.match(TEXT_HEADER);
       if (header) {
         finishParagraph();
@@ -646,7 +653,7 @@
         return;
       }
       const cont = trimmed.match(TEXT_CONTINUE);
-      if (cont) { messages.push('Gem の返事に続きがあります。Gem に「続き」と送り、返ってきたテキストをこの欄の下に貼り足して、もう一度読み込んでください（次は ' + toAsciiDigits(cont[1]) + ' ページから）'); return; }
+      if (cont) { continuePages.push(parseInt(toAsciiDigits(cont[1]), 10)); return; }
       const note = trimmed.match(TEXT_NOTE);
       if (note) {
         finishParagraph();
@@ -667,6 +674,16 @@
       current.paragraph.push(trimmed);
     });
     finishParagraph();
+
+    const covered = new Set();
+    essays.forEach((e) => e.sourcePages.forEach((n) => covered.add(n)));
+    const lastPage = covered.size > 0 ? Math.max.apply(null, Array.from(covered)) : 0;
+    const missing = [];
+    for (let n = 1; n < lastPage; n++) if (!covered.has(n)) missing.push(n);
+    if (missing.length > 0) messages.push('ページ ' + missing.join('、') + ' が読み込まれていません（Gem が飛ばしたか、まだ貼っていない返事があります）。Gem に「ページ ' + missing[0] + ' から読み直して」と送ってください');
+    continuePages.forEach((page) => {
+      if (page > lastPage) messages.push('Gem の返事に続きがあります。Gem に「続き」と送り、返ってきたテキストをこの欄の下に貼り足して、もう一度読み込んでください（次は ' + page + ' ページから）');
+    });
 
     const rawEssays = essays.map((e) => ({
       studentNumber: e.studentNumber, sourcePages: e.sourcePages,

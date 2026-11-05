@@ -610,4 +610,19 @@ test('テキスト形式: 改行が消えて同じ行に続いて貼られても
   assert.strictEqual(b.unsure.length, 1);
 });
 
+test('テキスト形式: 返事を2回続けて貼っても、2回目の「学年」行が本文に混ざらない。続きが貼られていれば続きの案内は出さない', () => {
+  const one = '学年: 2年\n\n===== 出席番号 1 ／ ページ 1,2\n題名（なし）:\n名前（なし）:\n\nあい。\n\n※直した所: なし\n※確認: なし\n\n処理したページ: 1〜2\n続きは ページ 3 から\n';
+  const two = '学年: 2年\n\n===== 出席番号 2 ／ ページ 3\n題名（なし）:\n名前（なし）:\n\nうえ。\n\n※直した所: なし\n※確認: なし\n\n処理したページ: 3\n';
+  const r = parseGeminiOutput(one + '\n' + two, cfg);
+  assert.deepStrictEqual(r.essays.find((e) => e.studentNumber === '1').blocks.map((b) => b.text), ['あい。']);
+  assert.deepStrictEqual(r.batchMessages.filter((m) => /続き|読み込まれていません/.test(m)), []);
+});
+
+test('テキスト形式: ページが飛んでいたら知らせる。最後に続きがあれば案内する', () => {
+  const text = '学年: 2年\n\n===== 出席番号 1 ／ ページ 1\n題名（なし）:\n名前（なし）:\n\nあ。\n\n===== 出席番号 2 ／ ページ 3\n題名（なし）:\n名前（なし）:\n\nい。\n\n続きは ページ 4 から';
+  const m = parseGeminiOutput(text, cfg).batchMessages.join('\n');
+  assert.ok(/ページ 2 が読み込まれていません/.test(m), m);
+  assert.ok(/次は 4 ページから/.test(m), m);
+});
+
 console.log('\n' + passed + ' 件通過' + (process.exitCode ? '（失敗あり）' : ''));
