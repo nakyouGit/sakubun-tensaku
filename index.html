@@ -42,6 +42,14 @@
   mark.mark-reverted { background:#eee; color:#666; text-decoration:line-through; }
   mark.mark-note { background:#fff2a8; color:#6b5300; }
   .gem-notes { margin:8px 0; padding:6px 10px; background:#fffbe6; border:1px solid #f0e2a0; border-radius:6px; font-size:.88rem; }
+  mark.mark-auto { background:#d6e6ff; color:#12407a; }
+  .editor-split { display:grid; grid-template-columns:1fr; gap:12px; align-items:start; }
+  @media (min-width: 1000px) { .editor-split.has-source { grid-template-columns:1fr 1fr; } }
+  .editor-right { position:sticky; top:8px; }
+  .source-viewer h3 { margin:0 0 4px; font-size:1rem; }
+  .source-scroll { max-height:78vh; overflow:auto; border:1px solid var(--line); background:#fff; }
+  .source-scroll canvas { display:block; max-width:none; }
+  .source-viewer button.active { background:var(--accent, #8a5a2b); color:#fff; }
   .text-editor-wrap { position:relative; margin:8px 0; }
   .text-editor-backdrop, .text-editor-area { box-sizing:border-box; width:100%; margin:0; padding:10px 12px; border:1px solid var(--line); border-radius:6px; font-family:"Noto Serif JP",serif; font-size:1.05rem; line-height:1.9; white-space:pre-wrap; word-wrap:break-word; overflow-wrap:break-word; letter-spacing:0; }
   .text-editor-backdrop { position:absolute; inset:0; color:transparent; background:#fff; pointer-events:none; overflow:hidden; }
@@ -81,6 +89,8 @@
       <label>用紙: <select id="paperSelect"><option value="A4">A4（横）</option><option value="B4">B4（横）</option></select></label>
       <button id="loadButton" class="primary">読み込んで用紙を作る</button>
     </div>
+    <p class="note">原稿の画像・PDF（「本文を直す」の横に並べて見比べるためのものです。この画面の中だけで開き、送りません）。画像はファイル名の最後の数字がページ番号になります（sakubun_p01.png → 1）。</p>
+    <div class="row"><input type="file" id="sourceFile" accept=".pdf,application/pdf,image/*" multiple> <span id="sourceStatus" class="note"></span></div>
     <div id="messages"></div>
   </section>
 
@@ -113,6 +123,8 @@
 <script src="layout.js"></script>
 <script src="render.js"></script>
 <script src="export.js"></script>
+<script src="suspicious.js"></script>
+<script src="source.js"></script>
 <script src="editor.js"></script>
 <script src="app.js"></script>
 </body>

@@ -625,4 +625,50 @@ test('テキスト形式: ページが飛んでいたら知らせる。最後に
   assert.ok(/次は 4 ページから/.test(m), m);
 });
 
+const { findSuspicious } = require('./suspicious.js');
+const Source = require('./source.js');
+const flagged = (text) => findSuspicious(text).map((r) => text.slice(r.start, r.end));
+
+test('自動チェック: 「二つ話します」なのに「三つ目」がある時と「二つ目」が無い時に印を付ける', () => {
+  const text = 'わたしは、二つ話します。\n\n一つ目は、あ。\n\n三つ目は、い。';
+  const hits = findSuspicious(text);
+  assert.ok(hits.some((r) => text.slice(r.start, r.end) === '三つ目'));
+  assert.ok(hits.some((r) => text.slice(r.start, r.end) === '二つ' && /二つ目/.test(r.reason)));
+});
+
+test('自動チェック: 番号がそろっていれば印を付けない', () => {
+  assert.deepStrictEqual(flagged('わたしは、二つ話します。\n\n一つ目は、あ。\n\n二つ目は、い。'), []);
+});
+
+test('自動チェック: 小さい字の不自然な並びに印を付け、ふつうの言葉には付けない', () => {
+  assert.ok(flagged('いっおわりました。').includes('っ'));
+  assert.ok(flagged('かゃくです。').includes('ゃ'));
+  assert.deepStrictEqual(flagged('きょうは、がっこうでしゅくだいをしました。'), []);
+});
+
+test('自動チェック: 1字だけ違うカタカナの言葉と、「。」の無い段落の終わりに印を付ける', () => {
+  assert.deepStrictEqual(flagged('ルンピニーでした。\n\nハンピニーでした。'), ['ルンピニー', 'ハンピニー']);
+  assert.deepStrictEqual(flagged('あいう。\n\nえおか'), ['か']);
+});
+
+test('濃くする: 薄い線は濃くなり、紙の地色（影つき）は白にそろう', () => {
+  const w = 64, h = 64;
+  const data = new Uint8ClampedArray(w * h * 4);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    const paper = x < 32 ? 220 : 170;            // 左は明るい紙、右は影
+    const ink = (y === 30 && x % 32 > 4 && x % 32 < 28) ? paper - 60 : paper; // 薄い線
+    const i = (y * w + x) * 4; data[i] = data[i + 1] = data[i + 2] = ink; data[i + 3] = 255;
+  }
+  Source.enhanceImageData(data, w, h);
+  const at = (x, y) => data[(y * w + x) * 4];
+  assert.ok(at(10, 10) > 200 && at(50, 10) > 200, '影の側も白に近い: ' + at(10, 10) + ',' + at(50, 10));
+  assert.ok(at(16, 30) < 120 && at(48, 30) < 120, '線は濃い: ' + at(16, 30) + ',' + at(48, 30));
+});
+
+test('原稿のページ番号: ファイル名の最後の数字から決める', () => {
+  assert.strictEqual(Source.pageNumberFromName('sakubun_p07.png'), 7);
+  assert.strictEqual(Source.pageNumberFromName('scan 12.jpg'), 12);
+  assert.strictEqual(Source.pageNumberFromName('写真.jpg'), null);
+});
+
 console.log('\n' + passed + ' 件通過' + (process.exitCode ? '（失敗あり）' : ''));

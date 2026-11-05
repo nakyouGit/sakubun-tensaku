@@ -92,7 +92,7 @@
   }
 
   /** 本文を色付きの部品にする。学年の漢字（赤・橙）と、Gem が確認を求めた言葉（黄）。 */
-  function buildTextHighlights(text, grade, noteWords) {
+  function buildTextHighlights(text, grade, noteWords, autoRanges) {
     const kanji = root.SakubunKanji;
     const classes = new Array(text.length).fill('');
     if (grade && kanji) {
@@ -101,6 +101,9 @@
         classes[i] = g > grade ? 'mark-unlearned' : g === grade ? 'mark-decide' : '';
       }
     }
+    (autoRanges || []).forEach((range) => {
+      for (let i = range.start; i < range.end && i < text.length; i++) classes[i] = 'mark-auto';
+    });
     noteWords.forEach((word) => {
       let from = 0;
       let at;
@@ -141,6 +144,8 @@
     legend.appendChild(make('mark', 'まだ習っていない漢字', 'mark-unlearned'));
     legend.appendChild(document.createTextNode(' '));
     legend.appendChild(make('mark', 'Gem が確認を求めた言葉', 'mark-note'));
+    legend.appendChild(document.createTextNode(' '));
+    legend.appendChild(make('mark', '自動チェックで怪しい所', 'mark-auto'));
     legend.appendChild(document.createTextNode('　空の行が段落の区切りです。空の行を入れたり消したりして、段落を変えられます。書き換えると、下のプレビューがすぐ変わります。'));
     container.appendChild(legend);
 
@@ -188,14 +193,38 @@
     area.value = startBlocks.map((b) => b.text).join('\n\n');
     wrap.appendChild(backdrop);
     wrap.appendChild(area);
-    container.appendChild(wrap);
+    const autoBox = make('div', undefined, 'gem-notes auto-notes');
+    const split = make('div', undefined, 'editor-split');
+    const left = make('div', undefined, 'editor-left');
+    left.appendChild(wrap);
+    left.appendChild(autoBox);
+    split.appendChild(left);
+    if (root.SakubunSource && root.SakubunSource.hasPages()) {
+      const right = make('div', undefined, 'editor-right');
+      root.SakubunSource.mountViewer(right, base.sourcePages);
+      split.appendChild(right);
+      split.classList.add('has-source');
+    }
+    container.appendChild(split);
 
     function sync() {
       area.style.height = 'auto';
       area.style.height = (area.scrollHeight + 4) + 'px';
       backdrop.textContent = '';
-      buildTextHighlights(area.value, grade, noteWords).forEach((node) => backdrop.appendChild(node));
+      const auto = root.SakubunSuspicious ? root.SakubunSuspicious.findSuspicious(area.value) : [];
+      buildTextHighlights(area.value, grade, noteWords, auto).forEach((node) => backdrop.appendChild(node));
       backdrop.appendChild(document.createTextNode('\n'));
+      autoBox.textContent = '';
+      autoBox.hidden = auto.length === 0;
+      if (auto.length > 0) {
+        autoBox.appendChild(make('div', '自動チェック（原稿と見比べてください）'));
+        const seen = new Set();
+        auto.forEach((range) => {
+          const word = area.value.slice(Math.max(0, range.start - 2), range.end + 2).replace(/\n/g, '');
+          const line = '「…' + word + '…」 ' + range.reason;
+          if (!seen.has(line)) { seen.add(line); autoBox.appendChild(make('div', line)); }
+        });
+      }
     }
 
     const collect = () => {

@@ -295,6 +295,20 @@
   }
 
   el('loadButton').addEventListener('click', handleLoad);
+  el('sourceFile').addEventListener('change', async (event) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+    el('sourceStatus').textContent = '読み込んでいます…';
+    try {
+      window.SakubunSource.clear();
+      const count = await window.SakubunSource.addFiles(files);
+      el('sourceStatus').textContent = count + ' ページ分の原稿を読み込みました。';
+      if (state.editingItem) openEditor(state.editingItem);
+    } catch (error) {
+      el('sourceStatus').textContent = error.message;
+    }
+  });
+
   el('inputFile').addEventListener('change', async (event) => {
     const file = event.target.files[0];
     if (file) el('inputText').value = await file.text();
